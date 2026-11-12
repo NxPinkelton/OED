@@ -12,7 +12,7 @@ const { getConnection } = require('../db');
 const { STRING_GENERAL_MAX_LENGTH: GENERAL_STRING_MAX_LENGTH, NUMERIC_ID_MAX_LENGTH } = require('../util/validationConstants');
 const { HTTP_CODES } = require('../util/httpCodes');
 const { isValidTimeInterval } = require('../util/timeValidation');
-const { isTokenAuthorized } = require('../util/userRoles');
+const { isReqAuthorized } = require('../util/userRoles');
 const Preferences = require('../models/Preferences');
 const User = require('../models/User');
 const { success, failure } = require('./response');
@@ -55,16 +55,15 @@ router.get('/line/count/meters/:meter_ids', optionalAuthMiddleware, async (req, 
 			const conn = getConnection();
 			meterIDs = req.params.meter_ids.split(',').map(s => parseInt(s));
 			timeInterval = TimeInterval.fromString(req.query.timeInterval);
-			const token = req.headers.token || req.body.token || req.query.token;
 			// 'displayable' means visible to non-admin users, so only admins see a non-displayable
 			// meter's reading count; everyone else gets the same (zero) result as for a meter id
 			// that does not exist.
-			const isAdmin = req.hasValidAuthToken && await isTokenAuthorized(token, User.role.ADMIN);
+			const isAdmin = isReqAuthorized(req, User.role.ADMIN);
 			const getCount = isAdmin ? Reading.getCountByMeterIDAndDateRange : Reading.getDisplayableCountByMeterIDAndDateRange;
 			let count = 0;
 			for (var i = 0; i < meterIDs.length; i++) {
 				const curr = await getCount(meterIDs[i], timeInterval.startTimestamp, timeInterval.endTimestamp, conn);
-				count += curr
+				count += curr;
 			}
 			// nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write
 			res.send(JSON.stringify(count));
@@ -73,7 +72,7 @@ router.get('/line/count/meters/:meter_ids', optionalAuthMiddleware, async (req, 
 			res.sendStatus(HTTP_CODES.INTERNAL_SERVER_ERROR);
 		}
 	}
-})
+});
 
 /**
  * Route for fetching raw readings by meter ID and time interval.
@@ -116,11 +115,10 @@ router.get('/line/raw/meter/:meter_id', optionalAuthMiddleware, async (req, res)
 			// Get the routed meter id and time for the desired readings.
 			meterID = req.params.meter_id;
 			timeInterval = TimeInterval.fromString(req.query.timeInterval);
-			const token = req.headers.token || req.body.token || req.query.token;
 			// 'displayable' means visible to non-admin users, so only admins see a non-displayable
 			// meter's data; everyone else gets the same (no data) result as for a meter id that
 			// does not exist.
-			const isAdmin = req.hasValidAuthToken && await isTokenAuthorized(token, User.role.ADMIN);
+			const isAdmin = isReqAuthorized(req, User.role.ADMIN);
 			const getCount = isAdmin ? Reading.getCountByMeterIDAndDateRange : Reading.getDisplayableCountByMeterIDAndDateRange;
 			const getReadings = isAdmin ? Reading.getReadingsByMeterIDAndDateRange : Reading.getDisplayableReadingsByMeterIDAndDateRange;
 			// Check if user is allowed to export.
@@ -132,11 +130,9 @@ router.get('/line/raw/meter/:meter_id', optionalAuthMiddleware, async (req, res)
 			if (fileSize <= preferences.defaultFileSizeLimit) {
 				// File size within limit, anyone can download.
 				shouldDownload = true;
-			} else if (req.hasValidAuthToken) {
+			} else if (isReqAuthorized(req, User.role.EXPORT)) {
 				// File size above limit, only users with the role EXPORT or ADMIN can download.
-				if (await isTokenAuthorized(token, User.role.EXPORT)) {
-					shouldDownload = true;
-				}
+				shouldDownload = true;
 			}
 			if (shouldDownload == false) {
 				failure(res, HTTP_CODES.FORBIDDEN);

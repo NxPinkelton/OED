@@ -9,7 +9,7 @@ const validate = require('jsonschema').validate;
 const { getConnection } = require('../db');
 const { adminAuthMiddleware, optionalAuthMiddleware } = require('./authenticator');
 const Point = require('../models/Point');
-const { isTokenAuthorized, isReqAuthorized } = require('../util/userRoles');
+const { isReqAuthorized } = require('../util/userRoles');
 const User = require('../models/User');
 const { DEFAULT_CIRCLE_SIZE } = require('../models/Map');
 const { STRING_GENERAL_MAX_LENGTH, STRING_SHORT_MAX_LENGTH: SHORT_STRING_MAX_LENGTH, NUMERIC_ID_MAX_LENGTH } = require('../util/validationConstants');
@@ -145,10 +145,8 @@ function validateMapsParams(params, isEdit = true) {
 
 router.get('/', optionalAuthMiddleware, async (req, res) => {
 	try {
-		// req.role = User.role... // DEBUG
 		const conn = getConnection();
 		let query;
-		// returns false if req.role is undefined/no role
 		if (isReqAuthorized(req, User.role.ADMIN)) {
 			query = Map.getAll; // only admins can see disabled maps;
 		} else {

@@ -237,8 +237,7 @@ const optionalAuthMiddleware = (req, res, next) => {
 	// Set auth token to false initially.
 	req.hasValidAuthToken = false;
 	// req.role is undefined unless token is validated.
-	req.role = undefined; // undefined is equivalent to having no role.
-
+	req.role = undefined;
 	const token = req.headers.token || req.body.token || req.query.token;
 	const validParams = {
 		type: 'string',
@@ -252,7 +251,6 @@ const optionalAuthMiddleware = (req, res, next) => {
 	verifyActiveTokenAndGetUser(token)
 		.then(async ({ decoded, user }) => {
 			req.hasValidAuthToken = true;
-			// console.log(user.role);
 			req.role = user.role;
 			next();
 		})

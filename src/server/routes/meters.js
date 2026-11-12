@@ -9,7 +9,7 @@ const Unit = require('../models/Unit');
 const { log } = require('../log');
 const validate = require('jsonschema').validate;
 const { getConnection } = require('../db');
-const { isTokenAuthorized } = require('../util/userRoles');
+const { isReqAuthorized } = require('../util/userRoles');
 const { adminAuthMiddleware, optionalAuthMiddleware } = require('./authenticator');
 const Point = require('../models/Point');
 const moment = require('moment');
@@ -108,8 +108,7 @@ router.get('/', optionalAuthMiddleware, async (req, res) => {
 	try {
 		const conn = getConnection();
 		let query;
-		const token = req.headers.token || req.body.token || req.query.token;
-		const isAuthorizedCSV = req.hasValidAuthToken && (await isTokenAuthorized(token, User.role.CSV));
+		const isAuthorizedCSV = (isReqAuthorized(req, User.role.CSV));
 		// Because groups can use hidden meters, everyone gets all meters but we filter the
 		// information given about the meter after getting it.
 		query = Meter.getAll;
