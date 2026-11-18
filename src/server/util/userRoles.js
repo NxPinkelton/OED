@@ -32,11 +32,7 @@ function isRoleAuthorized(role, requestedRole) {
  */
 function isReqAuthorized(req, requestedRole) {
 	const role = req.role;
-	if (role === User.role.ADMIN) {
-		return true;
-	} else {
-		return role === requestedRole;
-	}
+	return isRoleAuthorized(role, requestedRole);
 }
 
 /**

@@ -27,7 +27,7 @@ const { success, failure } = require('../services/csvPipeline/success');
 /** Middleware validation */
 const { normalizeBoolean, validateMetersCsvUploadParams, validateReadingsCsvUploadParams } = require('../services/csvPipeline/validateCsvUploadParams');
 const { CSVPipelineError } = require('../services/csvPipeline/CustomErrors');
-const { isTokenAuthorized, isUserAuthorized, isReqAuthorized } = require('../util/userRoles');
+const { isTokenAuthorized, isUserAuthorized } = require('../util/userRoles');
 
 const { CSV: csvRole } = require('../models/User').role;
 
@@ -63,7 +63,6 @@ router.use(function (req, res, next) {
 				if (token) {
 					// If a token is found, then we will check authentication and validation via the token.
 					(await isTokenAuthorized(token, csvRole)) ? cb(null, true) : cb(new Error('Invalid token (either unauthorized or logged out'));
-					// (isReqAuthorized(req, csvRole) ? cb(null, true) : cb(new Error('Invalid token (either unauthorized or logged out')));
 				} else {
 					// If no token is found, then the request is mostly like a curl request. We require an
 					// username and password to be supplied for curl requests.
